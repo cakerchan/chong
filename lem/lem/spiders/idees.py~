@@ -1,0 +1,78 @@
+# -*- coding: utf-8 -*-
+import scrapy
+import datetime
+from scrapy.selector import Selector
+from scrapy.http import Request
+from lem.items import LemItem
+import urllib2
+import re
+
+class Lenspider(scrapy.Spider):
+    name = 'idees'
+    all_domain = ['http://www.lematindz.net']
+    start_urls = ['http://www.lematindz.net/culture/index.{}.html'.format(i) for i in range(1, 2)]
+
+    def parse(self, response):
+        sel = Selector(response)
+        try:
+            link = sel.xpath('//article[@class="linkbox"]/a/@href').extract()
+            for url in link:
+                urls = 'http://www.lematindz.net/'+ url
+                #print '查看链接：', urls
+                yield Request(urls, callback=self.parse_content)
+        except Exception as e:
+            print '错误原因：', e
+
+    def parse_content(self, response):
+        item = LemItem()
+        sel2 = Selector(response)
+        item['image_urls'] = sel2.xpath(r'//div[@class="head-image thumb-wrap relative"]/img/@src').extract()
+        #item['category'] = ['idees']
+        img = sel2.xpath(r'//div[@class="head-image thumb-wrap relative"]/img').extract()
+        a = ''.join(img)
+        list = []
+        list.append(a)
+
+        des = sel2.xpath('//div[@class="col-sm-9"]/p/text()').extract()
+        a1 = ''.join(des)
+        list1 = []
+        list1.append(a1)
+
+        try:
+            now = datetime.datetime.now()
+            bb = now.strftime('%Y-%m-%d')
+            cc = str(bb)
+            listd = []
+            listd.append(cc)
+            #item['datime'] = listd
+            #item['title'] = sel2.xpath('//header/h1/text()').extract()
+            title = sel2.xpath('//header/h1/text()').extract()
+            print '标题：',title
+            article = sel2.xpath('//*[@id="article_in"]/text()').extract()
+            print '文章：',article
+
+            #item['article'] = sel2.xpath('//div[@id="article_in"]/text()').extract()
+            if '' in list1:
+                des = ['']
+                print '描述：',des
+                #item['des'] = ['']
+            else:
+                #item['des'] = list1
+                des = list1
+                print '描述：', des
+            if '' in list:
+                #item['img'] = ['']
+                 img = ['']
+                 print '图片地址：',img
+            else:
+                #item['img'] = list
+                 img = list
+                 print '图片地址：',img
+            yield item
+
+
+        except Exception as e:
+            print '内容解析错误原因：', e
+
+
+
